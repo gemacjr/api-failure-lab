@@ -1,0 +1,55 @@
+# Limits here are deliberately SMALL so failures show up at laptop-scale load.
+# See docs/architecture.md, "The deliberate limits".
+spring:
+  application:
+    name: failure-lab
+  datasource:
+    # Port 15432 is Toxiproxy, not Postgres. Every DB byte can have network faults injected.
+    url: jdbc:postgresql://localhost:15432/failurelab
+    username: lab
+    password: lab
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 5
+      connection-timeout: 3000        # ms a request waits for a free connection before failing
+      leak-detection-threshold: 2000  # log a warning when a connection is held > 2s
+  jpa:
+    open-in-view: false               # never hold a DB connection for the whole HTTP request
+    hibernate:
+      ddl-auto: validate              # Flyway owns the schema; Hibernate only checks it
+    properties:
+      hibernate:
+        session_factory:
+          statement_inspector: com.example.failurelab.scenarios.nplusone.QueryCounter
+  mvc:
+    problemdetails:
+      enabled: true
+
+server:
+  tomcat:
+    threads:
+      max: 20                         # the whole app can serve 20 requests concurrently
+      min-spare: 20
+    accept-count: 100                 # connections that queue once all 20 threads are busy
+    mbeanregistry:
+      enabled: true                   # required for tomcat_threads_* metrics
+
+lab:
+  downstream:
+    # Port 18080 is Toxiproxy in front of WireMock.
+    base-url: http://localhost:18080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,threaddump,heapdump
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+        http.client.requests: true
+
+logging:
+  pattern:
+    level: "%5p [%X{correlationId:-}]"

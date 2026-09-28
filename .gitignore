@@ -41,3 +41,10 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+### Local tooling ###
+.superpowers/
+.remember/
+
+### Lab dumps ###
+dumps/*
+!dumps/.gitkeep
