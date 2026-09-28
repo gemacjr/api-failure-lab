@@ -23,8 +23,8 @@ make load S=06 V=broken     # 16 attackers + 1 canary
 make load S=06 V=fixed
 ```
 
-Try growing the input by 2 characters at a time on `broken` and watch the time explode. The script uses 16 attackers
-because that's more than most laptops' core count. Raise it if `sysctl -n hw.ncpu` (macOS) or `nproc` (Linux)
+Try growing the input by 2 characters at a time on `broken` and watch the time explode. The script uses 16 attackers,
+which is more than most laptops' core count, so the CPU saturates. Raise it if `sysctl -n hw.ncpu` (macOS) or `nproc` (Linux)
 reports more.
 
 ## What you'll see
@@ -36,7 +36,7 @@ Time for a single request to `broken`, by input length. These timings are from t
 | 21 chars | ~60 ms | < 1 ms |
 | 26 chars | ~120 ms | < 1 ms |
 | 31 chars | ~0.9 s | < 1 ms |
-| 34 chars (the attack payload) | (measured in Task 11) | < 1 ms |
+| 34 chars (the attack payload) | **5.8 s** (1.4 s in the unit test, when the JVM is not also serving HTTP) | < 1 ms |
 | 41 chars | ~14 s | < 1 ms |
 | 5,001 chars | (never finishes) | 1 ms, or `400` over 200 chars |
 
@@ -44,14 +44,21 @@ Under load (16 attackers + 1 canary, 45 s):
 
 | Metric | broken | fixed |
 |---|---|---|
-| process CPU | (measured in Task 11) | (measured in Task 11) |
-| attack requests completed | (measured in Task 11) | (measured in Task 11) |
-| canary `/api/ping` p95 | (measured in Task 11) | (measured in Task 11) |
+| process CPU (all cores) | **~75%** | 3% average |
+| attack request p95 | **15.5 s** | < 16 ms |
+| requests completed in 45 s | 147 (≈57 attacks + ≈90 canary pings) | ~195,000 |
+| canary `/api/ping` p95 | 3.2 ms | 15.9 ms |
+
+**The canary was *not* starved, and that's a lesson too.** 16 CPU-bound threads on 10 cores saturate the
+CPU, but the OS scheduler still gives a microsecond-long ping its time slice. What suffers is
+every request that needs *real* CPU time, including legitimate users of the same endpoint. Each attack also holds a
+Tomcat thread for ~15 s, so **with 20 or more attackers this becomes scenario 01**: the thread pool runs out and
+*then* the canary dies. Try `vus: 24` in `k6/06-redos.js` and watch the canary threshold fail.
 
 ## Diagnose
 
 1. **High CPU plus low throughput.** Grafana → *CPU usage (process vs system)* (http://localhost:3300) shows
-   the process near 1.0 (100% of all cores), while *Request rate* is tiny. When the CPU is busy but the work
+   the process high (~0.75 of *all* cores in the lab run), while *Request rate* is tiny. When the CPU is busy but the work
    isn't getting done, the CPU is being spent on something pathological.
 2. **What's burning it?** Take **two** thread dumps about 5 seconds apart:
    ```bash

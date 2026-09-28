@@ -40,11 +40,18 @@ The load is 20 req/s with a unique key each time, and each entry is 100 KB, so a
 
 | Metric | broken | fixed |
 |---|---|---|
-| heap used after 1 min | (measured in Task 11) | (measured in Task 11) |
-| heap used after 2 min | (measured in Task 11) | (measured in Task 11) |
-| GC pause time/s at the end | (measured in Task 11) | (measured in Task 11) |
-| time until `OutOfMemoryError` | (measured in Task 11) | never |
-| cache entries (`lab_cache_entries`) | (measured in Task 11) | ≤ 500 |
+| heap used after 1 min | 160 MB (1,154 entries) | 115 MB (500 entries) |
+| heap used after 2 min | *no data*: the app stopped answering scrapes | 119 MB |
+| heap used after 3 min | *no data* | 120 MB |
+| time until `OutOfMemoryError` | **~1.5–2 min** (~2,200 entries ≈ 216 MB of `byte[]`) | never |
+| requests OK over the 4-minute run | 2,209 / 3,702 (**40% failed**) | 4,800 / 4,800 |
+| heap dump written | `dumps/java_pid<pid>.hprof`, 295 MB | — |
+
+**After the OOM the JVM did not exit.** It stayed up as a zombie. `curl /api/ping` timed out, and the process had to
+be killed. That's worse than a crash, because nothing restarts a process that is still "running".
+In production, add **`-XX:+ExitOnOutOfMemoryError`** (or `-XX:+CrashOnOutOfMemoryError`) so the orchestrator
+restarts it, keep `HeapDumpOnOutOfMemoryError` so you still get the evidence, and write the dump to a volume
+that outlives the container.
 
 ## Diagnose
 

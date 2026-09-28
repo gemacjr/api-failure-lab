@@ -36,10 +36,21 @@ The load is 20 users for 45 s against a pool of 5 connections with a 3 s connect
 
 | Metric | broken | fixed |
 |---|---|---|
-| error rate (`http_req_failed`) | (measured in Task 11) | (measured in Task 11) |
-| p95 latency | (measured in Task 11) | (measured in Task 11) |
-| requests/s | (measured in Task 11) | (measured in Task 11) |
-| max `hikaricp_connections_pending` | (measured in Task 11) | (measured in Task 11) |
+| error rate (`http_req_failed`) | **55.7%** (151 / 271) | **0%** (0 / 444) |
+| p95 latency | 4.14 s | 2.09 s (the downstream's 2 s) |
+| requests/s | 5.6 | 9.4 (the maximum 20 users × 2 s allow) |
+| max `hikaricp_connections_pending` | 14 | 11, but each wait is ~1 ms |
+| `pg_stat_activity` during a request | 5 × `idle in transaction` | — |
+
+A sample of `pg_stat_activity` taken during a burst of broken requests:
+
+```
+ pid |        state        | in_xact |                   q
+-----+---------------------+---------+------------------------------------------
+  49 | idle in transaction | t       | select count(*) from downstream_call_log
+  50 | idle in transaction | t       | select count(*) from downstream_call_log
+  ... (5 rows: the whole pool)
+```
 
 ## Diagnose
 

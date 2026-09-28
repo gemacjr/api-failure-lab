@@ -34,14 +34,28 @@ Replace `broken` with `fixed` and run it again: the ping comes back instantly, a
 ## What you'll see
 
 k6 runs 40 users against the scenario endpoint plus one canary user on `/api/ping`, for 60 s.
+These numbers were measured on the lab machine (10-core Mac, JDK 17, Docker Desktop).
 
 | Metric | broken | fixed |
 |---|---|---|
-| canary `/api/ping` p95 | (measured in Task 11) | (measured in Task 11) |
-| load endpoint p95 | (measured in Task 11) | (measured in Task 11) |
-| load: % served (200) | (measured in Task 11) | (measured in Task 11) |
-| load: % shed (503) | (measured in Task 11) | (measured in Task 11) |
-| Tomcat busy threads (max 20) | (measured in Task 11) | (measured in Task 11) |
+| canary `/api/ping` p95 | **3.56 s** ✗ | **146 ms** ✓ |
+| load requests completed in 60 s | 636 (~10/s) | 2,565 (~43/s) |
+| load: served (200) | 100% | 9% (240) |
+| load: shed fast (503) | 0% | 87% (2,148) |
+| Tomcat busy threads (max 20) | 20 | 20 (see below) |
+
+**Why is Tomcat still at 20 busy threads in the fixed run?** A shed request waits up to 100 ms
+(`MAX_WAIT_FOR_PERMIT`) for a permit before giving up, and k6 ignores `Retry-After` and retries
+*immediately*. So 32 users are constantly spending 100 ms each inside the bulkhead's wait, and that uses up
+threads too. The canary still improves 24×, because each thread frees up within 100 ms instead of 2 s.
+
+> 🧪 **Exercise:** predict what happens to *busy threads* and *canary p95* with `MAX_WAIT_FOR_PERMIT = Duration.ZERO`
+> (reject instantly) in `ThreadPoolConfig`, then measure it. What do you give up? (Hint: a burst of 9 requests
+> arriving within the same millisecond.)
+
+> ℹ️ A handful of `dial: i/o timeout` failures in the k6 output (about one per virtual user, in the first
+> second) come from Docker Desktop forwarding a burst of new connections from the k6 container to the host. They are
+> not the app: a 40-user run against `/api/ping` shows the same 40 errors out of 144,140 requests.
 
 ## Diagnose
 

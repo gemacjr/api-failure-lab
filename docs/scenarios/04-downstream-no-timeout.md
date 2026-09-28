@@ -46,10 +46,24 @@ The load is 30 users plus 1 canary for 60 s, with the downstream +30 s slower.
 
 | Metric | broken | fixed |
 |---|---|---|
-| load p95 | (measured in Task 11) | (measured in Task 11) |
-| canary `/api/ping` p95 | (measured in Task 11) | (measured in Task 11) |
-| % responses degraded (`X-Degraded: true`) | (measured in Task 11) | (measured in Task 11) |
-| Tomcat busy threads (max 20) | (measured in Task 11) | (measured in Task 11) |
+| requests completed in 60 s | **42** | **1,270** |
+| load p95 | 60 s (k6's timeout) | 2.0 s |
+| canary `/api/ping` p95 | **30 s** | 528 ms |
+| errors | 24% (k6 gave up) | 0% |
+| % responses degraded (`X-Degraded: true`) | 0% | 100% |
+| Tomcat busy threads (max 20) | 16* | 20 |
+
+The fault table above was verified as well: black hole, broken still hanging when curl gave up at 20 s,
+fixed 1.01 s; refused, broken 500 in 13 ms, fixed 3 ms; reset, broken 500 in 15 ms, fixed 7 ms.
+
+Two things in these numbers are worth reading slowly:
+
+- **\*Your monitoring goes blind.** Broken's "16 busy threads" is an *under*-count. Prometheus scrapes
+  `/actuator/prometheus`, which needs a Tomcat thread too. While all 20 were stuck, scrapes failed and the
+  peak was never recorded. A gap in your graphs during an incident is itself a signal.
+- **The fix is a huge improvement, but it's not a complete fix.** Fixed still saturates Tomcat and the canary rises to 528 ms,
+  because 30 users × ~1 s timeout ≈ 30 requests in flight against 20 threads (Little's Law). That is exactly
+  why a timeout alone isn't enough, and why scenario 01's bulkhead exists (see *Relation to scenario 01*).
 
 ## Diagnose
 

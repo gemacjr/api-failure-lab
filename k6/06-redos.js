@@ -1,6 +1,7 @@
 // Scenario 06 - ReDoS. A few "attackers" send a 34-char near-miss; 1 canary pings.
 // 16 attackers > the CPU cores of most laptops (check yours: sysctl -n hw.ncpu / nproc).
-// Broken: each request pins a CPU core for seconds, and the canary slows because the CPU is saturated.
+// Broken: each request pins a CPU core for ~15 s under load. The canary survives CPU saturation (the OS
+// scheduler still slices it in), but with >= 20 attackers every Tomcat thread is taken and it dies too.
 // Fixed: microseconds per request.
 import http from 'k6/http';
 import { check } from 'k6';

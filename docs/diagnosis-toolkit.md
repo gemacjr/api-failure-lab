@@ -161,6 +161,9 @@ Proxies: `postgres` (app → :15432 → Postgres) and `downstream` (app → :180
 - **`http_req_failed`**: the share of responses that were non-2xx/3xx, or failed to connect.
 - **`checks`**: e.g. `served (200)` vs `shed fast (503)` in scenario 01. The split *is* the result.
 - **`http_reqs`**: total count and requests per second (throughput).
+- **`dial: i/o timeout`** warnings, about one per virtual user in the first second: Docker Desktop is forwarding a
+  burst of new connections from the k6 container to the host. That's the load generator's environment, not the app. Always ask
+  whether a failure is in the system under test or in the thing generating the load.
 - **`iterations`** and `vus`: with `constant-vus`, a slow server means fewer iterations. That's coordinated
   omission (see the [failure taxonomy](failure-taxonomy.md)).
 

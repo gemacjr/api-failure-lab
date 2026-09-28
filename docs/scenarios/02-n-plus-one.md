@@ -40,9 +40,14 @@ The data is 200 authors × 10 books. The load is 10 users for 30 s.
 | Metric | broken | fixed |
 |---|---|---|
 | SQL statements per request | 201 | 1 |
-| p95 latency (local DB) | (measured in Task 11) | (measured in Task 11) |
-| requests/s (local DB) | (measured in Task 11) | (measured in Task 11) |
-| single request with +5 ms DB latency | (measured in Task 11) | (measured in Task 11) |
+| p95 latency (local DB) | 409 ms | 43 ms |
+| requests/s (local DB) | 42 | 314 (**7.4×**) |
+| single request, no fault | 120 ms | 10 ms |
+| single request with +5 ms DB latency (Toxiproxy) | **~1.5 s** | **~33 ms** |
+| max Hikari `pending` | 5 | 3 |
+
+The last row is a bonus lesson. Because broken holds a connection for all 201 round trips, 10 users are
+enough to queue on the 5-connection pool. **N+1 is a connection-pool problem too** (scenario 03).
 
 ## Diagnose
 
