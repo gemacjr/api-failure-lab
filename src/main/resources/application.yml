@@ -26,6 +26,7 @@ spring:
       enabled: true
 
 server:
+  port: 8180                        # not 8080: that port is commonly taken on dev machines
   tomcat:
     threads:
       max: 20                         # the whole app can serve 20 requests concurrently

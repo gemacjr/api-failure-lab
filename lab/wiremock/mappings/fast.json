@@ -1,0 +1,8 @@
+{
+  "request": { "method": "GET", "url": "/fast" },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": { "value": "fast" }
+  }
+}

@@ -1,0 +1,7 @@
+apiVersion: 1
+providers:
+  - name: failure-lab
+    folder: Failure Lab
+    type: file
+    options:
+      path: /var/lib/grafana/dashboards

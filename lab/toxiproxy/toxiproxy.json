@@ -1,0 +1,4 @@
+[
+  { "name": "postgres",   "listen": "0.0.0.0:15432", "upstream": "postgres:5432", "enabled": true },
+  { "name": "downstream", "listen": "0.0.0.0:18080", "upstream": "wiremock:8080", "enabled": true }
+]
