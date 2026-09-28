@@ -7,9 +7,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.client.HttpServerErrorException;
-import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 /**
  * Scenario 04. Both variants call the downstream /fast endpoint. Break it for real with
@@ -45,10 +45,14 @@ class DownstreamTimeoutController {
         try {
             String body = timed.get().uri("/fast").retrieve().body(String.class);
             return ResponseEntity.ok(new DownstreamResult("downstream", body));
-        } catch (ResourceAccessException | HttpServerErrorException ex) {
-            // The DOWNSTREAM is unhealthy (timeout, reset, refused, 5xx): degrade instead of failing.
-            // A 4xx (HttpClientErrorException) is deliberately NOT caught - it means our request is wrong,
-            // and a fallback would hide that bug. It surfaces as a 500 via GlobalExceptionHandler.
+        } catch (HttpClientErrorException ex) {
+            // A 4xx means OUR request is wrong - a fallback would hide that bug. Let it surface as a 500
+            // via GlobalExceptionHandler.
+            throw ex;
+        } catch (RestClientException ex) {
+            // Everything else means the DOWNSTREAM is unhealthy: connect/read timeout, reset, refused, 5xx,
+            // or a timeout that fires while the body is still arriving (Spring reports that one as a plain
+            // RestClientException, not ResourceAccessException). Degrade instead of failing.
             log.warn("Downstream unavailable ({}); serving fallback", ex.getClass().getSimpleName());
             return ResponseEntity.ok()
                     .header("X-Degraded", "true")

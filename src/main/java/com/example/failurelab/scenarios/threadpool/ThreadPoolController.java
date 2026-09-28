@@ -58,6 +58,7 @@ class ThreadPoolController {
     }
 
     private String callSlowDownstream() {
-        return downstream.get().uri("/slow").retrieve().body(String.class);
+        String body = downstream.get().uri("/slow").retrieve().body(String.class);
+        return body == null ? "" : body; // never null: Bulkhead reports a null result as "rejected"
     }
 }

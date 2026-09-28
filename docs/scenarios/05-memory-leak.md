@@ -71,14 +71,14 @@ that outlives the container.
    (`-XX:+HeapDumpOnOutOfMemoryError`), or on demand:
    ```bash
    jcmd <pid> GC.heap_dump dumps/manual.hprof
-   # or: curl -o dumps/actuator.hprof localhost:8180/actuator/heapdump
+   # or: curl -sf -o dumps/actuator.hprof localhost:8180/actuator/heapdump
    ```
    Open it in [Eclipse MAT](https://eclipse.dev/mat/):
    - **Leak Suspects report**: MAT points at a single `ConcurrentHashMap` retaining most of the heap.
    - **Dominator tree**: `MemoryLeakController.LEAKY_CACHE` → `ConcurrentHashMap` → thousands of `byte[102400]`.
    - **Path to GC Roots** (on the map): the root is a *static field*, which answers *why it can never be collected*.
 5. ⚠️ **Security:** a heap dump contains everything in memory, including passwords, tokens and personal data. `/actuator/heapdump`
-   must never be exposed publicly. The lab exposes it only because it runs on your laptop.
+   must never be exposed publicly. The lab enables it only because everything is bound to 127.0.0.1.
 
 ## Root cause
 

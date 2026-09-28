@@ -69,6 +69,8 @@ make load S=01 V=fixed     # ...then compare with the fix
 | WireMock, direct | http://localhost:8189 | bypasses the faults |
 
 The host ports avoid the defaults (8080, 3000, 5432, 9090) so that the lab can run alongside other projects.
+Everything listens on **127.0.0.1 only**, because a deliberately breakable app shouldn't be reachable from your network.
+See [Architecture: Loopback only](docs/architecture.md#loopback-only) (Linux users: read that section).
 
 ## Scenarios
 

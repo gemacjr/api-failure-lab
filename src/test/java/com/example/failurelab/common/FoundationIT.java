@@ -40,6 +40,14 @@ class FoundationIT extends AbstractLabIT {
     }
 
     @Test
+    void diagnosticActuatorEndpointsTheDocsUseAreAvailable() {
+        HttpResponse<String> response = get("/actuator");
+
+        assertThat(response.statusCode()).isEqualTo(200);
+        assertThat(response.body()).contains("/actuator/heapdump", "/actuator/threaddump", "/actuator/prometheus");
+    }
+
+    @Test
     void prometheusEndpointIsExposed() {
         HttpResponse<String> response = get("/actuator/prometheus");
 

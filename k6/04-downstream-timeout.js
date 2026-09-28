@@ -2,7 +2,9 @@
 // FIRST inject the fault:   make toxic-latency TARGET=downstream MS=30000
 // AFTERWARDS remove it:     make toxic-reset
 // 30 users + 1 canary. Broken: requests hang for 30s, all 20 threads are stuck, and the canary dies.
-// Fixed: ~1s degraded responses and a healthy canary.
+// Fixed: every request degraded within ~1-2s, 30x the throughput - but EXPECT the thresholds to fail for
+// "fixed" too: 30 users x ~1s timeout still needs ~30 threads (Little's Law). A timeout alone isn't enough;
+// that is the lesson of combining this scenario with 01's bulkhead.
 import http from 'k6/http';
 import { check } from 'k6';
 import { BASE_URL, VARIANT, canary } from './lib.js';

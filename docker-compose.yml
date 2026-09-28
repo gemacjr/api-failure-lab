@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: lab
       POSTGRES_PASSWORD: lab
     ports:
-      - "55432:5432"   # direct access for psql / pg_stat_activity (the app uses 15432 via toxiproxy)
+      - "127.0.0.1:55432:5432"   # direct access for psql / pg_stat_activity (the app uses 15432 via toxiproxy)
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U lab -d failurelab"]
       interval: 2s
@@ -21,7 +21,7 @@ services:
     volumes:
       - ./lab/wiremock:/home/wiremock:ro
     ports:
-      - "8189:8080"     # direct access, bypassing toxiproxy
+      - "127.0.0.1:8189:8080"     # direct access, bypassing toxiproxy
 
   toxiproxy:
     image: ghcr.io/shopify/toxiproxy:2.12.0
@@ -29,9 +29,9 @@ services:
     volumes:
       - ./lab/toxiproxy/toxiproxy.json:/config/toxiproxy.json:ro
     ports:
-      - "8474:8474"     # toxiproxy control API
-      - "15432:15432"   # app -> postgres
-      - "18080:18080"   # app -> wiremock
+      - "127.0.0.1:8474:8474"     # toxiproxy control API
+      - "127.0.0.1:15432:15432"   # app -> postgres
+      - "127.0.0.1:18080:18080"   # app -> wiremock
     depends_on:
       postgres:
         condition: service_healthy
@@ -43,7 +43,7 @@ services:
     volumes:
       - ./lab/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     ports:
-      - "9190:9090"
+      - "127.0.0.1:9190:9090"
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
@@ -58,7 +58,7 @@ services:
       - ./lab/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./lab/grafana/dashboards:/var/lib/grafana/dashboards:ro
     ports:
-      - "3300:3000"
+      - "127.0.0.1:3300:3000"
     depends_on:
       - prometheus
 

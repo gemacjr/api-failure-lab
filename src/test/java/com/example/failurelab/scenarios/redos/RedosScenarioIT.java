@@ -11,6 +11,8 @@ class RedosScenarioIT extends AbstractLabIT {
 
     @Test
     void fixedHandlesTheAttackPayloadInstantly() {
+        get("/scenarios/redos/fixed?input=warmup"); // first request in a JVM pays for class loading/JIT
+
         long start = System.nanoTime();
         HttpResponse<String> response = get("/scenarios/redos/fixed?input=" + CsvRecordValidatorTest.NEAR_MISS);
 

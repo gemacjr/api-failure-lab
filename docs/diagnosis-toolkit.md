@@ -35,12 +35,14 @@ curl -s localhost:8180/actuator/health
 curl -s localhost:8180/actuator/metrics                                   # every metric name
 curl -s localhost:8180/actuator/metrics/hikaricp.connections.pending      # one metric, right now
 curl -s localhost:8180/actuator/metrics/tomcat.threads.busy
-curl -s localhost:8180/actuator/threaddump -H 'Accept: text/plain' > dumps/actuator-threads.txt
-curl -s -o dumps/actuator.hprof localhost:8180/actuator/heapdump
+curl -sf localhost:8180/actuator/threaddump -H 'Accept: text/plain' > dumps/actuator-threads.txt
+curl -sf -o dumps/actuator.hprof localhost:8180/actuator/heapdump   # -f: fail instead of saving an error page as .hprof
 ```
 
 ⚠️ `/actuator/heapdump` and `/actuator/threaddump` expose memory contents and internals, including secrets.
-**Never expose them publicly.** This lab exposes them only on your laptop.
+**Never expose them publicly.** Since Spring Boot 3.4, the heap dump endpoint is switched off even when it's listed in
+`exposure.include`; the lab turns it on explicitly (`management.endpoint.heapdump.access: unrestricted`). It only
+does that because the app and every lab port are bound to **127.0.0.1**, so nobody else on your network can reach them.
 
 ## 3. Thread dumps: *what is every thread doing right now?*
 

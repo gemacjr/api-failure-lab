@@ -23,6 +23,18 @@ The app **never** connects to a dependency directly (`application.yml` points at
 means any scenario can have a network fault added at any time with `scripts/toxics.sh`, the same way things
 break in production: at the network layer, not in your code.
 
+### Loopback only
+
+This app is *designed* to be broken: one request can pin a CPU (06) or exhaust the heap (05), and it serves heap
+dumps. So the app (`server.address: 127.0.0.1`) and every Docker port (`"127.0.0.1:<host>:<container>"`) listen
+on **loopback only**. Nobody else on your café or office Wi-Fi can reach the endpoints, Grafana (anonymous admin),
+Postgres (`lab`/`lab`) or the Toxiproxy API.
+
+Prometheus and k6 run in containers but reach the app through `host.docker.internal`. On Docker Desktop
+(macOS and Windows) that still works with the app on 127.0.0.1. **On Linux**, `host-gateway` is the Docker bridge
+address, which can't see a loopback-only app. There, run the app with `SERVER_ADDRESS=0.0.0.0 make run` behind a
+host firewall, or use `network_mode: host` for the prometheus and k6 services.
+
 ## The deliberate limits
 
 The limits are set **small on purpose**. Failures depend on *ratios* (users per thread, hold time per

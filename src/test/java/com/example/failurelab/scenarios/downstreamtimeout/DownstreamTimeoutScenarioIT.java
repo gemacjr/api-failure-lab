@@ -52,6 +52,21 @@ class DownstreamTimeoutScenarioIT extends AbstractLabIT {
     }
 
     @Test
+    void fixedServesTheFallbackWhenHeadersArriveButTheBodyStalls() {
+        // Headers in time, body dribbled over 3s: the 1s timeout fires mid-body, which Spring reports as a
+        // plain RestClientException rather than ResourceAccessException.
+        DOWNSTREAM.stubFor(WireMock.get("/fast").willReturn(
+                okJson("{\"value\":\"fast\"}").withChunkedDribbleDelay(5, 3000)));
+
+        long start = System.nanoTime();
+        HttpResponse<String> response = get("/scenarios/downstream-timeout/fixed");
+
+        assertThat(elapsedMs(start)).isLessThan(1500);
+        assertThat(response.statusCode()).isEqualTo(200);
+        assertThat(response.headers().firstValue("X-Degraded")).hasValue("true");
+    }
+
+    @Test
     void fixedServesTheFallbackWhenTheDownstreamReturns5xx() {
         DOWNSTREAM.stubFor(WireMock.get("/fast").willReturn(serviceUnavailable()));
 

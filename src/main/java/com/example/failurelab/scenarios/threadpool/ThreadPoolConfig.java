@@ -10,7 +10,7 @@ import java.time.Duration;
 @Configuration
 class ThreadPoolConfig {
 
-    /** 8 of Tomcat's 20 threads may wait on the slow dependency; the other 12 always stay free. */
+    /** At most 8 of Tomcat's 20 threads may be inside the slow call; rejected callers still wait up to MAX_WAIT_FOR_PERMIT. */
     static final int MAX_CONCURRENT_SLOW_CALLS = 8;
     static final Duration MAX_WAIT_FOR_PERMIT = Duration.ofMillis(100);
 

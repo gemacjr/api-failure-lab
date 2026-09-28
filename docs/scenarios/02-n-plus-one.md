@@ -64,11 +64,12 @@ enough to queue on the 5-connection pool. **N+1 is a connection-pool problem too
    docker compose exec postgres psql -U lab failurelab \
      -c "alter system set log_min_duration_statement = 0" -c "select pg_reload_conf()"
    curl -s localhost:8180/scenarios/n-plus-one/broken > /dev/null
-   docker compose logs postgres --since 10s | grep -c 'from book'      # ~200
+   docker compose logs postgres --since 10s | grep 'execute' | grep -c 'from book'   # ~200 executions
    docker compose exec postgres psql -U lab failurelab \
      -c "alter system reset log_min_duration_statement" -c "select pg_reload_conf()"
    ```
-   In production, the `pg_stat_statements` extension gives you the same information in aggregate: look for
+   (Postgres logs the parse, bind and execute steps of each statement separately. Counting only the `execute` lines gives
+   one line per query.) In production, the `pg_stat_statements` extension gives you the same information in aggregate: look for
    statements with an enormous `calls` count and a tiny `mean_exec_time`.
 3. **Prove it's round trips, not SQL.** Run the Toxiproxy demo above. Adding 5 ms per round trip makes
    broken slower by about 200 × 5 ms, while fixed barely moves. Latency that scales with *round trips* is an N+1 problem.

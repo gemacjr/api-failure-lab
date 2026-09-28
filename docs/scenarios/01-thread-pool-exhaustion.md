@@ -118,7 +118,8 @@ try { return Optional.ofNullable(call.get()); }
 finally { permits.release(); }                                              // always give it back
 ```
 
-**Why 8?** It leaves 12 of the 20 threads free for everything else. You size a bulkhead from what the
+**Why 8?** At most 8 of the 20 threads can be stuck inside the slow call. The rest can only be held briefly, by the
+≤100 ms permit wait (see *What you'll see* for how that still adds up under a retry-happy client). You size a bulkhead from what the
 *rest* of the app needs, not from what the slow dependency wants.
 
 **Why a fast 503 beats a slow 200:** a rejected request frees its thread in ≤100 ms. `Retry-After` tells

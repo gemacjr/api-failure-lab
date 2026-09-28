@@ -36,9 +36,13 @@ Time for a single request to `broken`, by input length. These timings are from t
 | 21 chars | ~60 ms | < 1 ms |
 | 26 chars | ~120 ms | < 1 ms |
 | 31 chars | ~0.9 s | < 1 ms |
-| 34 chars (the attack payload) | **5.8 s** (1.4 s in the unit test, when the JVM is not also serving HTTP) | < 1 ms |
+| 34 chars (the attack payload) | **4.3–5.8 s** through the API (5 runs, warm and cold) | < 1 ms |
 | 41 chars | ~14 s | < 1 ms |
 | 5,001 chars | (never finishes) | 1 ms, or `400` over 200 chars |
+
+The same 34-character input takes only 1.4–2.4 s in `CsvRecordValidatorTest`. Backtracking time depends heavily on
+JIT state and on which runs came before it, so the absolute numbers move around. What doesn't move is the *shape*:
+every 2 extra characters multiply it. This is one more reason to fix the pattern rather than trust "it was fast when I tried it".
 
 Under load (16 attackers + 1 canary, 45 s):
 
@@ -63,7 +67,7 @@ Tomcat thread for ~15 s, so **with 20 or more attackers this becomes scenario 01
 2. **What's burning it?** Take **two** thread dumps about 5 seconds apart:
    ```bash
    make threaddump; sleep 5; make threaddump
-   grep -A12 '"http-nio-8180-exec' dumps/threads-*.txt | grep -E 'State:|regex|RedosController' | sort | uniq -c
+   grep -A80 '"http-nio-8180-exec' dumps/threads-*.txt | grep -E 'State:|RedosController' | sort | uniq -c   # -A80: the regex stack is ~55 frames deep
    ```
    The busy request threads are `RUNNABLE` in `java.util.regex.Pattern$Loop.match`,
    `Pattern$CharProperty.match` and similar frames, with `RedosController.broken` below them. **The same threads, in
@@ -86,7 +90,8 @@ way the pattern could have matched the input before giving up.
 
 `.*` can also match commas. So for an input of 33 commas, the engine can split it into 10 `something,`
 groups in an astronomical number of ways (roughly "33 choose 10"). The final `\d+` fails on the `x`, so the
-engine tries **every one of those splits**. Each extra character multiplies the work.
+engine tries **every one of those splits**. The work grows **polynomially**, roughly as n¹⁰ for `{10}`. It isn't
+exponential like `(a+)+`, but a degree-10 polynomial is just as fatal: going from 31 to 41 characters takes you from ~1 s to ~14 s.
 
 **Why not the famous `(a+)+` example?** Since JDK 9, `java.util.regex` *memoizes* simple greedy loops,
 so the classic textbook patterns (`^(a+)+$`, `^(\w+\s?)*$`, `^([a-zA-Z0-9]+)*@...`) run in about 0 ms on JDK 17.

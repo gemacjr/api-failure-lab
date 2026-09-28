@@ -27,7 +27,8 @@ public class Bulkhead {
 
     /**
      * Runs {@code call} if a permit becomes available within {@code maxWait}; otherwise returns
-     * {@link Optional#empty()} WITHOUT running it.
+     * {@link Optional#empty()} WITHOUT running it. {@code call} must not return {@code null}: an empty
+     * result would be indistinguishable from a rejection.
      */
     public <T> Optional<T> tryCall(Supplier<T> call) {
         boolean acquired;

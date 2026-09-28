@@ -1,6 +1,7 @@
 package com.example.failurelab.scenarios.threadpool;
 
 import com.example.failurelab.support.AbstractLabIT;
+import com.github.tomakehurst.wiremock.client.WireMock;
 import org.junit.jupiter.api.Test;
 
 import java.net.http.HttpResponse;
@@ -50,6 +51,13 @@ class ThreadPoolScenarioIT extends AbstractLabIT {
         assertThat(ok).as("calls admitted by the 8-permit bulkhead").isEqualTo(8);
         assertThat(shed).hasSize(CONCURRENT_CALLS - 8)
                 .allSatisfy(r -> assertThat(r.headers().firstValue("Retry-After")).hasValue("1"));
+    }
+
+    @Test
+    void fixedDoesNotMistakeAnEmptyDownstreamResponseForARejection() {
+        DOWNSTREAM.stubFor(WireMock.get("/slow").willReturn(WireMock.noContent()));
+
+        assertThat(get("/scenarios/thread-pool/fixed").statusCode()).isEqualTo(200);
     }
 
     private List<CompletableFuture<HttpResponse<String>>> fire(String path) {

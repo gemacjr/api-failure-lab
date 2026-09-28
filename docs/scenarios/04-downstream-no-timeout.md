@@ -19,10 +19,13 @@ make up && make run
 make toxic-latency TARGET=downstream MS=30000
 
 make load S=04 V=broken
-make load S=04 V=fixed
+make load S=04 V=fixed      # expect ✗ thresholds here too - see "What you'll see"
 
 make toxic-reset
 ```
+
+> `make load` exits with an error whenever a k6 threshold fails. For this scenario that happens for **both**
+> variants, and it's intentional: the thresholds describe a *healthy* service, and a timeout alone doesn't get you there.
 
 Try the other faults too. They teach different lessons:
 
