@@ -48,3 +48,24 @@ bin/
 ### Lab dumps ###
 dumps/*
 !dumps/.gitkeep
+
+# Added before first GitHub push
+node_modules/
+.next/
+dist/
+target/
+target.nosync/
+.gradle/
+.terraform/
+*.tfstate
+*.tfstate.*
+.env
+.env.*
+!.env.example
+.idea/
+.worktrees/
+.playwright-mcp/
+.venv/
+graphify-out/
+Pods/
+*.log
